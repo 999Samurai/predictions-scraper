@@ -14,7 +14,7 @@ class Game:
 # Running every function that we have for scraping the predicts from each website
 # To add more websites, you will need to add the function name on the function array
 def main():
-    functions = [forebet, predictz, windrawwin, soccervista]
+    functions = [forebet, predictz, windrawwin, soccervista, prosoccer]
     for func in functions:
         func()
 
@@ -119,6 +119,37 @@ def soccervista():
 
         predicts['soccervista'].append({'game': game_class.name, 'predict': game_class.predict})
 
+def prosoccer():
+    global predicts
+    # https://www.prosoccer.gr/en/football/predictions/
+
+    predicts['prosoccer'] = []
+
+    url = "https://www.prosoccer.gr/en/football/predictions"
+    page = requests.get(url, headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"})
+
+    soup = BeautifulSoup(page.content, "html.parser")
+    games = soup.find_all('tr')
+
+    for game in games:
+        try:
+            game_name = game.find("td", {"class": "mio"}).text.lower()
+        except:
+            continue
+
+        if game_name is None: 
+            continue
+
+        game_class = Game()
+        game_class.name = game_name.split('-')[0][:-1] + ' vs ' + game_name.split('-')[1][1:]
+        
+        predict = game.find("span", {"class": "sctip"}).text[1:]
+        if '-' in predict:
+            predict = predict.split('-')[0]
+        game_class.predict = predict
+
+        predicts['prosoccer'].append({'game': game_class.name, 'predict': game_class.predict})
+
 main()
 
 # Storing all the array names to filter the games and the predicts
@@ -137,7 +168,7 @@ for arr in to_filter:
             home_name = game_teams[0]
             away_name = game_teams[1]
 
-            if home_name in game or away_name in game:
+            if home_name.lower() in game.lower() or away_name.lower() in game.lower():
                 found = True
         if found == False:
             predicts['games'].append(to_add_games['game'])
@@ -153,7 +184,7 @@ for arr in to_filter:
             home_name = game_teams[0]
             away_name = game_teams[1]
 
-            if home_name in game or away_name in game:
+            if home_name.lower() in game.lower() or away_name.lower() in game.lower():
                 predicts['predicts_' + arr].append(game_to_filter['predict'])
                 found = True
                 break
@@ -167,7 +198,8 @@ df = pd.DataFrame({
     'Forebet': predicts['predicts_forebet'], 
     'PredictZ': predicts['predicts_predictz'], 
     'WinDrawWin': predicts['predicts_windrawwin'], 
-    'SoccerVista': predicts['predicts_soccervista']
+    'SoccerVista': predicts['predicts_soccervista'],
+    'ProSoccer': predicts['predicts_prosoccer']
 })
 
 writer = pd.ExcelWriter('predicts.xlsx', engine='xlsxwriter')
