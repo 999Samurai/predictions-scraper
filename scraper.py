@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import re
+import cloudscraper
 
 # Default dict that will be used to store everything
 predicts = {}
@@ -49,13 +50,16 @@ def predictz():
 
     predicts['predictz'] = []
 
-    url = "https://www.predictz.com/predictions"
-    page = requests.get(url, headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"})
+    scraper = cloudscraper.create_scraper()
+    page = scraper.get("https://www.predictz.com/predictions")
 
-    soup = BeautifulSoup(page.content, "html.parser")
+    soup = BeautifulSoup(page.text, "html.parser")
     games = soup.find_all(class_='ptcnt')
 
     for game in games:
+        if game.find("div", {"class": "ptmobh"}) is None: 
+            continue
+
         home = game.find("div", {"class": "ptmobh"}).text
         away = game.find("div", {"class": "ptmoba"}).text
 
@@ -76,20 +80,17 @@ def windrawwin():
 
     predicts['windrawwin'] = []
 
-    url = "https://www.windrawwin.com/predictions/today"
-    page = requests.get(url, headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"})
+    scraper = cloudscraper.create_scraper()
+    page = scraper.get("https://www.windrawwin.com/predictions/today")
 
     soup = BeautifulSoup(page.content, "html.parser")
     games = soup.find_all(class_='wttr')
 
     for game in games:
-        game_name = game.find("span", {"class": "wtmoblnk"}).text
-
-        if ' v ' not in game_name:
-            continue
+        teams = game.find_all("div", {"class": "wtmoblnk"})
 
         game_class = Game()
-        game_class.name = game_name.split(' v ')[0] + " vs " + game_name.split(' v ')[1]
+        game_class.name = teams[0].text + " vs " + teams[1].text
         predict_text = game.find("div", {"class": "wtprd"}).text # Home 2-0
         game_class.predict = '1' if 'Home' in predict_text else '2' if 'Away' in predict_text else 'X'
 
