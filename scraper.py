@@ -16,7 +16,7 @@ class Game:
 # Running every function that we have for scraping the predicts from each website
 # To add more websites, you will need to add the function name on the function array
 def main():
-    functions = [forebet, predictz, windrawwin, soccervista, prosoccer, vitibet]
+    functions = [forebet, predictz, windrawwin, soccervista, prosoccer, vitibet, footystats]
     for func in functions:
         func()
 
@@ -152,7 +152,6 @@ def prosoccer():
 
         predicts['prosoccer'].append({'game': game_class.name, 'predict': game_class.predict})
 
-
 def vitibet():
     global predicts
     # https://www.vitibet.com/index.php?clanek=quicktips&sekce=fotbal&lang=en
@@ -181,6 +180,32 @@ def vitibet():
         game_class.predict = game.find("td", {"class": regex}).text.replace('0', 'X')
 
         predicts['vitibet'].append({'game': game_class.name, 'predict': game_class.predict})
+
+def footystats():
+    global predicts
+    # https://footystats.org/predictions/
+
+    predicts['footystats'] = []
+
+    url = "https://footystats.org/predictions/"
+    page = requests.get(url, headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"})
+
+    soup = BeautifulSoup(page.content, "html.parser")
+    games = soup.find_all(class_='betHeaderTitle')
+
+    for game in games:
+        predict = game.find("span", {"class": "market"}).text.lower()
+        game.find('span', class_="market").decompose()
+        game_name = game.text.strip()
+
+        if game_name == 'See More Football Predictions':
+            continue
+
+        game_class = Game()
+        game_class.name = game_name
+        game_class.predict = '1' if 'home win' in predict else '2' if 'away win' in predict else 'X' if 'draw' in predict else predict
+
+        predicts['footystats'].append({'game': game_class.name, 'predict': game_class.predict})
 
 main()
 
@@ -232,7 +257,8 @@ df = pd.DataFrame({
     'WinDrawWin': predicts['predicts_windrawwin'], 
     'SoccerVista': predicts['predicts_soccervista'],
     'ProSoccer': predicts['predicts_prosoccer'],
-    'Vitibet': predicts['predicts_vitibet']
+    'Vitibet': predicts['predicts_vitibet'],
+    'Footystats': predicts['predicts_footystats']
 })
 
 writer = pd.ExcelWriter('predicts.xlsx', engine='xlsxwriter')
