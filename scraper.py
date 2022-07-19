@@ -16,7 +16,7 @@ class Game:
 # Running every function that we have for scraping the predicts from each website
 # To add more websites, you will need to add the function name on the function array
 def main():
-    functions = [forebet, predictz, windrawwin, soccervista, prosoccer, vitibet, footystats]
+    functions = [forebet, predictz, windrawwin, soccervista, prosoccer, vitibet, footystats, zulubet]
     for func in functions:
         func()
 
@@ -207,6 +207,36 @@ def footystats():
 
         predicts['footystats'].append({'game': game_class.name, 'predict': game_class.predict})
 
+def zulubet():
+    global predicts
+    # http://www.zulubet.com/
+
+    predicts['zulubet'] = []
+
+    url = "http://www.zulubet.com/"
+    page = requests.get(url, headers={"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36"})
+
+    soup = BeautifulSoup(page.content, "html.parser")
+    games = soup.find_all('tr', attrs={'bgcolor': '#EFEFEF'})
+    games += soup.find_all('tr', attrs={'bgcolor': '#FFFFFF'})
+    print(games)
+
+    for game in games:
+        try:
+            predict = game.find('font', attrs={'color': 'green'}).text
+        except:
+            continue
+
+        game_name = game.find('a').text
+
+        print(game_name)
+
+        game_class = Game()
+        game_class.name = game_name.replace(' - ', ' vs ')
+        game_class.predict = predict
+
+        predicts['zulubet'].append({ 'game': game_class.name, 'predict': game_class.predict })
+
 main()
 
 # Storing all the array names to filter the games and the predicts
@@ -258,7 +288,8 @@ df = pd.DataFrame({
     'SoccerVista': predicts['predicts_soccervista'],
     'ProSoccer': predicts['predicts_prosoccer'],
     'Vitibet': predicts['predicts_vitibet'],
-    'Footystats': predicts['predicts_footystats']
+    'Footystats': predicts['predicts_footystats'],
+    'Zulubet': predicts['predicts_zulubet']
 })
 
 writer = pd.ExcelWriter('predicts.xlsx', engine='xlsxwriter')
