@@ -5,11 +5,9 @@ A scraper to get predictions from multiple websites and then convert them all in
 
 Use the package manager pip to install all the dependencies.
 
+- Python 3.7.0
 ```bash
-$ pip install requests
-$ pip install beautifulsoup4
-$ pip install pandas
-$ pip install cloudscraper
+$ pip install -r requirements.txt
 ```
 
 ## Usage
